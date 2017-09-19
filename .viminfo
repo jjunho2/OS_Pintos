@@ -27,14 +27,17 @@
 # Registers:
 
 # File marks:
-'0  37  0  ~/.viminfo
-'1  1  0  ~/.profile
-'2  1  2  ~/.bash_logout
-'3  106  4  ~/.bash_history
-'4  1  0  ~/.bash_
-'5  108  28  ~/.bashrc
+'0  27  28  ~/pintos/src/threads/thread.c
+'1  37  0  ~/.viminfo
+'2  1  0  ~/.profile
+'3  1  2  ~/.bash_logout
+'4  106  4  ~/.bash_history
+'5  1  0  ~/.bash_
+'6  108  28  ~/.bashrc
 
 # Jumplist (newest first):
+-'  27  28  ~/pintos/src/threads/thread.c
+-'  1  0  ~/pintos/src/threads/thread.c
 -'  37  0  ~/.viminfo
 -'  1  0  ~/.viminfo
 -'  1  0  ~/.profile
@@ -132,10 +135,14 @@
 -'  1  0  ~/.bash_
 -'  108  28  ~/.bashrc
 -'  1  0  ~/.bashrc
--'  108  28  ~/.bashrc
--'  1  0  ~/.bashrc
 
 # History of marks within files (newest to oldest):
+
+> ~/pintos/src/threads/thread.c
+	"	27	28
+	^	27	29
+	.	27	28
+	+	27	28
 
 > ~/.viminfo
 	"	37	0
