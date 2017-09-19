@@ -269,3 +269,60 @@ git commit
 ll
 git push
 ll
+ls
+cd pintos/src/threads/
+ll
+vim thread.c
+cd ~
+ll
+vi .vimrc
+git status
+vim .gitignore 
+git status
+add .
+git add.
+git add .
+git status
+vim .gitignore 
+git add .
+git status
+git commit
+ll
+git statuc
+git status
+git push
+git remote
+git status
+exit
+passwd
+ll
+passwd -help
+passwd -e
+passwd -e os10
+passwd
+ll
+exit
+ls
+pintos
+ls
+pintos --run alarm-multiple
+cd pintos/src/threads/
+pintos --run alarm-multiple
+ll
+
+git status
+cd pintos/src/threads/
+ls
+rm .synch.h.swp 
+rm dRZ7V2wQfC.dsk 
+ll
+pintos --run alarm-multiple
+cd pintos/src/threads/
+pintos -- run alarm-multiple
+ls
+cd pintos/src/threads/
+pintos -v -- run alarm-multiple
+le
+ls
+ce pintos/src/
+ll

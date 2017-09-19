@@ -1,4 +1,6 @@
-.viminfo
-.bash_history
-.bashrc
 .vimrc
+.viminfo
+.bashrc
+.bash_logout
+.bash_history
+
