@@ -23,6 +23,7 @@
 /* List of processes in THREAD_READY state, that is, processes
    that are ready to run but not actually running. */
 static struct list ready_list;
+static struct list sleep_list;
 
 /* List of all processes.  Processes are added to this list
    when they are first scheduled and removed when they exit. */
@@ -91,6 +92,7 @@ thread_init (void)
 
   lock_init (&tid_lock);
   list_init (&ready_list);
+  list_init (&sleep_list);
   list_init (&all_list);
 
   /* Set up a thread structure for the running thread. */
@@ -245,7 +247,7 @@ thread_unblock (struct thread *t)
 
   old_level = intr_disable ();
   ASSERT (t->status == THREAD_BLOCKED);
-  list_push_back (&ready_list, &t->elem);
+    list_insert_ordered(&ready_list, &t->elem, compare_priority, NULL);
   t->status = THREAD_READY;
   intr_set_level (old_level);
 }
@@ -304,6 +306,59 @@ thread_exit (void)
   NOT_REACHED ();
 }
 
+bool
+compare_waiting_tick(const struct list_elem *a, const struct list_elem *b, void *aux)
+{
+    struct thread *a_thread;
+    struct thread *b_thread;
+    a_thread=list_entry(a, struct thread, elem);
+    b_thread=list_entry(b, struct thread, elem);
+    return ((a_thread->waiting_tick)<(b_thread->waiting_tick));
+}
+
+bool
+compare_priority(const struct list_elem *a, const struct list_elem *b, void *aux)
+{
+    struct thread *a_thread;
+    struct thread *b_thread;
+    a_thread=list_entry(a, struct thread, elem);
+    b_thread=list_entry(b, struct thread, elem);
+    return ((a_thread->priority)>(b_thread->priority));
+}
+
+void
+thread_sleep (void)
+{
+  struct thread* cur = thread_current();
+  enum intr_level old_level;
+  ASSERT (!intr_context ());
+
+  old_level = intr_disable ();
+    if (cur != idle_thread)
+        list_insert_ordered(&sleep_list, &cur->elem, compare_waiting_tick, NULL);
+  cur->status=THREAD_BLOCKED;
+  schedule();
+  intr_set_level(old_level);
+}
+
+void
+thread_wakeup (int64_t now_tick)
+{
+    struct list_elem *e;
+    for(e=list_begin(&sleep_list);e!=list_end(&sleep_list);)
+    {
+        struct thread *temp = list_entry(e, struct thread, elem);
+        if (now_tick >= temp->waiting_tick)
+        {
+            e=list_next(e);
+            list_remove(&temp->elem);
+            thread_unblock(temp);
+        }
+        else
+            e=list_next(e);
+    }
+}
+
 /* Yields the CPU.  The current thread is not put to sleep and
    may be scheduled again immediately at the scheduler's whim. */
 void
@@ -316,7 +371,7 @@ thread_yield (void)
 
   old_level = intr_disable ();
   if (cur != idle_thread) 
-    list_push_back (&ready_list, &cur->elem);
+    list_insert_ordered(&ready_list, &cur->elem, compare_priority, NULL);
   cur->status = THREAD_READY;
   schedule ();
   intr_set_level (old_level);

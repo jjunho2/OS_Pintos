@@ -88,6 +88,11 @@ struct thread
     char name[16];                      /* Name (for debugging purposes). */
     uint8_t *stack;                     /* Saved stack pointer. */
     int priority;                       /* Priority. */
+    
+    int64_t waiting_tick;
+    struct lock *waiting_lock;
+    int original_priority;
+
     struct list_elem allelem;           /* List element for all threads list. */
 
     /* Shared between thread.c and synch.c. */
@@ -125,6 +130,14 @@ const char *thread_name (void);
 
 void thread_exit (void) NO_RETURN;
 void thread_yield (void);
+
+/*new functions for alarm clock*/
+
+bool compare_waiting_tick(const struct list_elem *a, const struct list_elem *b, void *aux);
+bool compare_priority(const struct list_elem *a, const struct list_elem *b, void *aux);
+
+void thread_sleep (void);
+void thread_wakeup (int64_t now_tick);
 
 /* Performs some operation on thread t, given auxiliary data AUX. */
 typedef void thread_action_func (struct thread *t, void *aux);
