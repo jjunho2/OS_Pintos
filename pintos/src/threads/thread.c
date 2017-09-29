@@ -422,9 +422,9 @@ thread_set_priority (int new_priority)
     return;
 
   thread_current()->original_priority = new_priority;
-  thread_current()->priority = new_priority;
 
-  if(thread_current()->waiting_lock != NULL) lock_update_priority(thread_current());
+  lock_update_priority(thread_current());
+
   thread_max_priority();
 
   intr_set_level(old_level);
@@ -435,6 +435,7 @@ thread_set_priority (int new_priority)
 thread_get_priority (void) 
 {
   enum intr_level old_level = intr_disable();
+  lock_update_priority(thread_current());
   int temp = thread_current ()->priority;
   intr_set_level(old_level);
   return temp;
