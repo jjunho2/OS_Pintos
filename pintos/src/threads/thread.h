@@ -87,16 +87,21 @@ struct thread
     enum thread_status status;          /* Thread state. */
     char name[16];                      /* Name (for debugging purposes). */
     uint8_t *stack;                     /* Saved stack pointer. */
+    
     int priority;                       /* Priority. */
+    int original_priority;
     
     int64_t waiting_tick;
     struct lock *waiting_lock;
-    int original_priority;
+    struct list holding_locks;
 
     struct list_elem allelem;           /* List element for all threads list. */
 
     /* Shared between thread.c and synch.c. */
     struct list_elem elem;              /* List element. */
+  
+    int recent_cpu;                     /* recent cpu */
+    int nice;                           /* niceness */
 
 #ifdef USERPROG
     /* Owned by userprog/process.c. */
@@ -135,6 +140,7 @@ void thread_yield (void);
 
 bool compare_waiting_tick(const struct list_elem *a, const struct list_elem *b, void *aux);
 bool compare_priority(const struct list_elem *a, const struct list_elem *b, void *aux);
+bool compare_donate_priority(const struct list_elem *a, const struct list_elem *b, void *aux);
 
 void thread_sleep (void);
 void thread_wakeup (int64_t now_tick);
@@ -145,10 +151,17 @@ void thread_foreach (thread_action_func *, void *);
 
 int thread_get_priority (void);
 void thread_set_priority (int);
+void thread_max_priority (void);
 
 int thread_get_nice (void);
 void thread_set_nice (int);
 int thread_get_recent_cpu (void);
 int thread_get_load_avg (void);
+
+void thread_update_load_avg (void);
+void thread_update_recent_cpu (struct thread * t);
+void thread_update_priority (struct thread * t);
+void thread_update_recent_cpu_all (void);
+void thread_update_priority_all (void);
 
 #endif /* threads/thread.h */
