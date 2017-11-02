@@ -193,6 +193,9 @@ thread_create (const char *name, int priority,
   t->nice = cur->nice;
   init_thread (t, name, priority);
   tid = t->tid = allocate_tid ();
+  list_init(&(t->file_opened)); 
+  list_init(&(t->child_pid));
+  t->is_kernel=true;
 
   /* Prepare thread for first run by initializing its stack.
      Do this atomically so intermediate values for the 'stack' 
@@ -435,12 +438,13 @@ thread_set_priority (int new_priority)
   int
 thread_get_priority (void) 
 {
-  enum intr_level old_level = intr_disable();
+/*  enum intr_level old_level = intr_disable();
   int temp;
   lock_update_priority(thread_current());
   temp = thread_current ()->priority;
   intr_set_level(old_level);
   return temp;
+*/
 }
 
   void
@@ -479,7 +483,7 @@ thread_max_priority (void)
   void
 thread_set_nice (int new_nice UNUSED) 
 {
-  enum intr_level old_level = intr_disable();
+/*  enum intr_level old_level = intr_disable();
   struct thread *cur=running_thread();
   struct list_elem *e;
   int i;
@@ -495,6 +499,7 @@ thread_set_nice (int new_nice UNUSED)
   
   thread_max_priority ();
   intr_set_level(old_level);
+*/
 }
 
 /* Returns the current thread's nice value. */
@@ -529,7 +534,7 @@ thread_get_arg_recent_cpu (struct thread *t)
 
 void thread_update_load_avg (void)
 {
-  int i, ready_threads=1;
+/*  int i, ready_threads=1;
   struct list_elem *e;
   enum intr_level old_level = intr_disable();
   for(i=0;i<64;i++)
@@ -542,6 +547,7 @@ void thread_update_load_avg (void)
   ready_threads=ready_threads*16384;
   load_avg=((int64_t)(59*load_avg))/60 + (int64_t)ready_threads/60;
   intr_set_level(old_level);
+*/
 }
 
 void thread_update_recent_cpu (struct thread * t)
@@ -570,7 +576,7 @@ void thread_update_recent_cpu_all (void)
 
 void thread_update_priority_all (void)
 {
-  struct list_elem *e;
+/*  struct list_elem *e;
   struct thread *t;
   enum intr_level old_level = intr_disable();
   for (e = list_begin (&all_list); e != list_end (&all_list);e = list_next (e))
@@ -579,6 +585,7 @@ void thread_update_priority_all (void)
   }
   thread_max_priority();
   intr_set_level(old_level);
+*/
 }
 
 

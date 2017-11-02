@@ -80,6 +80,23 @@ typedef int tid_t;
    only because they are mutually exclusive: only a thread in the
    ready state is on the run queue, whereas only a thread in the
    blocked state is on a semaphore wait list. */
+
+struct process_pid
+  {
+    int pid;
+    bool returned;
+    int returned_val;
+    struct list_elem elem;
+  };
+
+struct file_node
+  {
+    struct file* _file;
+    int fd;
+    struct list_elem all_list_elem;
+    struct list_elem thread_list_elem;
+  };
+
 struct thread
   {
     /* Owned by thread.c. */
@@ -88,6 +105,8 @@ struct thread
     char name[16];                      /* Name (for debugging purposes). */
     uint8_t *stack;                     /* Saved stack pointer. */
     
+    char full_name[128];
+
     int priority;                       /* Priority. */
     int original_priority;
     
@@ -96,6 +115,11 @@ struct thread
     struct list holding_locks;
 
     struct list_elem allelem;           /* List element for all threads list. */
+    
+    struct list file_opened;            /* list of fd that the thread opened*/
+    
+    struct list child_pid;              /* list of child pid */
+    struct list_elem process_pid;
 
     /* Shared between thread.c and synch.c. */
     struct list_elem elem;              /* List element. */
@@ -110,6 +134,8 @@ struct thread
 
     /* Owned by thread.c. */
     unsigned magic;                     /* Detects stack overflow. */
+ 
+    bool is_kernel;
   };
 
 /* If false (default), use round-robin scheduler.
