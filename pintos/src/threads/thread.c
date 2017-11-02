@@ -345,7 +345,7 @@ thread_sleep (void)
   old_level = intr_disable ();
   if (cur != idle_thread)
     list_insert_ordered(&sleep_list, &cur->elem, compare_waiting_tick, NULL);
-  cur->status=THREAD_BLOCKED;
+  cur->status=THREAD_BLOCKED; 
   schedule();
   intr_set_level(old_level);
 }
@@ -419,14 +419,15 @@ thread_set_priority (int new_priority)
   enum intr_level old_level = intr_disable();
 
   if(thread_mlfqs) /*this func have to be ignored in mlfqs mode*/
+  {
+    intr_set_level(old_level);
     return;
-
+  }
   thread_current()->original_priority = new_priority;
 
   lock_update_priority(thread_current());
-
+  
   thread_max_priority();
-
   intr_set_level(old_level);
 }
 
@@ -435,8 +436,9 @@ thread_set_priority (int new_priority)
 thread_get_priority (void) 
 {
   enum intr_level old_level = intr_disable();
+  int temp;
   lock_update_priority(thread_current());
-  int temp = thread_current ()->priority;
+  temp = thread_current ()->priority;
   intr_set_level(old_level);
   return temp;
 }
@@ -444,16 +446,31 @@ thread_get_priority (void)
   void
 thread_max_priority (void)
 {
+  int i;
+  struct thread *temp;
   if(list_empty(&ready_list)) return;
+  
+  temp = list_entry(list_front(&ready_list), struct thread, elem);
 
-  struct thread *temp = list_entry(list_front(&ready_list), struct thread, elem);
-
+  if(thread_mlfqs)
+  {
+    for(i=63;i>-1;i--)
+      {
+         if (!list_empty(&mlfqs_ready_queue[i]))
+            break;
+      }
+      if((thread_current()->priority)<i)
+            thread_yield();
+    return;
+  }
+  
   if(intr_context())
   {
     if(temp->priority > thread_current()->priority)
       intr_yield_on_return();
     return;
   }
+  
   if(temp->priority > thread_current()->priority)
     thread_yield();
 }
@@ -467,18 +484,16 @@ thread_set_nice (int new_nice UNUSED)
   struct list_elem *e;
   int i;
 
+  if(new_nice>20)
+    new_nice=20;
+  else if(new_nice<-20)
+    new_nice=-20;
+
   cur->nice=new_nice;
   thread_update_recent_cpu(cur);
   thread_update_priority(cur);
-
-  for(i=63;i>-1;i--)
-  {
-    if (!list_empty(&mlfqs_ready_queue[i]))
-    break;
-  }
-  if((cur->priority)<i)
-    thread_yield();
-
+  
+  thread_max_priority ();
   intr_set_level(old_level);
 }
 
@@ -516,6 +531,7 @@ void thread_update_load_avg (void)
 {
   int i, ready_threads=1;
   struct list_elem *e;
+  enum intr_level old_level = intr_disable();
   for(i=0;i<64;i++)
   {
     for (e = list_begin (&all_list); e != list_end (&all_list);e = list_next (e))
@@ -525,6 +541,7 @@ void thread_update_load_avg (void)
   }
   ready_threads=ready_threads*16384;
   load_avg=((int64_t)(59*load_avg))/60 + (int64_t)ready_threads/60;
+  intr_set_level(old_level);
 }
 
 void thread_update_recent_cpu (struct thread * t)
@@ -539,11 +556,6 @@ void thread_update_recent_cpu (struct thread * t)
 void thread_update_priority (struct thread * t)
 {
   int new_priority=(int)(PRI_MAX-(thread_get_arg_recent_cpu(t)/4)-(t->nice)*2);
-  if(new_priority>20)
-    new_priority=20;
-  else if(new_priority<(-20))
-    new_priority=(-20);
-
   t->priority=new_priority;
 }
 
@@ -560,10 +572,13 @@ void thread_update_priority_all (void)
 {
   struct list_elem *e;
   struct thread *t;
+  enum intr_level old_level = intr_disable();
   for (e = list_begin (&all_list); e != list_end (&all_list);e = list_next (e))
   {
     thread_update_priority(list_entry(e, struct thread, elem));
   }
+  thread_max_priority();
+  intr_set_level(old_level);
 }
 
 
