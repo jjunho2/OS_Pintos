@@ -29,9 +29,9 @@ static bool load (const char *cmdline, void (**eip) (void), void **esp);
 process_execute (const char *file_name) 
 {
   char *fn_copy;
-  char *token;
-  char **saveptr=NULL;
   tid_t tid;
+  struct thread *cur=thread_current();
+  struct thread *new_thread;
 
   /* Make a copy of FILE_NAME.
      Otherwise there's a race between the caller and load(). */
@@ -44,10 +44,19 @@ process_execute (const char *file_name)
   tid = thread_create (file_name, PRI_DEFAULT, start_process, fn_copy);
 
   //file_name에서 file open하고 diable걸기
-  //is_kernel 0으로 update, full_name에 이름 저장
+  //full_name에 이름 저장
 
   if (tid == TID_ERROR)
-    palloc_free_page (fn_copy); 
+    palloc_free_page (fn_copy);
+
+  new_thread=tid2thread(tid);
+  new_thread->is_kernel=false;
+  char *temp;
+  strlcpy(new_thread->full_name,fn_copy,PGSIZE);
+  strtok_r(new_thread->full_name, " ", &temp);
+
+  list_push_back(&cur->child_tid_list,&new_thread->tid_list_node);
+
   return tid;
 }
 
@@ -59,6 +68,7 @@ start_process (void *file_name_)
   char *file_name = file_name_;
   struct intr_frame if_;
   bool success;
+  char *temp;
 
   /* Initialize interrupt frame and load executable. */
   memset (&if_, 0, sizeof if_);
@@ -67,10 +77,19 @@ start_process (void *file_name_)
   if_.eflags = FLAG_IF | FLAG_MBS;
   success = load (file_name, &if_.eip, &if_.esp);
 
+  strtok_r(file_name," ",&temp);
+  struct file *file = fd2file(open(file_name));
+  file_deny_write(file);
+
+
   /* If load failed, quit. */
+  if (!success){ 
+    if(file != NULL)close(file_name);
+    palloc_free_page (file_name);
+    thread_exit();
+  }
+  
   palloc_free_page (file_name);
-  if (!success) 
-    thread_exit ();
 
   /* Start the user process by simulating a return from an
      interrupt, implemented by intr_exit (in
@@ -78,6 +97,7 @@ start_process (void *file_name_)
      arguments on the stack in the form of a `struct intr_frame',
      we just point the stack pointer (%esp) to our stack frame
      and jump to it. */
+
   asm volatile ("movl %0, %%esp; jmp intr_exit" : : "g" (&if_) : "memory");
   NOT_REACHED ();
 }
@@ -92,10 +112,20 @@ start_process (void *file_name_)
    This function will be implemented in problem 2-2.  For now, it
    does nothing. */
   int
-process_wait (tid_t child_tid UNUSED) 
+process_wait (tid_t child_tid) 
 {
-  while(1);
-  return -1;
+  struct pid_node* child= pid2pid_node(child_tid);
+  int temp;
+
+  while(!child->is_returned){
+    thread_yield();
+  };
+
+  temp = child->returned_val;
+  list_remove(&child->elem);
+  palloc_free_page(child);
+
+  return temp;
 }
 
 /* Free the current process's resources. */
@@ -229,7 +259,11 @@ load (const char *file_name, void (**eip) (void), void **esp)
   process_activate ();
 
   /* Open executable file. */
-  file = filesys_open (file_name);
+  char *temp_file_name = palloc_get_page(0);
+  char *temp;
+  strlcpy(temp_file_name, file_name, PGSIZE);
+  strtok_r(temp_file_name, " ", &temp);
+  file = filesys_open (temp_file_name);
   if (file == NULL) 
   {
     printf ("load: %s: open failed\n", file_name);
@@ -319,7 +353,7 @@ load (const char *file_name, void (**eip) (void), void **esp)
 
 done:
   /* We arrive here whether the load is successful or not. */
-  file_close (file);
+  if(file != NULL) file_close (file);
   return success;
 }
 
@@ -444,8 +478,6 @@ setup_stack (void **esp, char *file_name)
   int argc=0;
   int* argv[128];
 
-
-  
   kpage = palloc_get_page (PAL_USER | PAL_ZERO);
   if (kpage != NULL) 
   {

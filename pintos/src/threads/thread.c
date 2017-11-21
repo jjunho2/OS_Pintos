@@ -24,6 +24,8 @@
    that are ready to run but not actually running. */
 static struct list ready_list;
 static struct list sleep_list;
+static struct list pid_list;
+
 static struct list mlfqs_ready_queue[64];
 
 static int load_avg=0;
@@ -98,6 +100,7 @@ thread_init (void)
   list_init (&ready_list);
   list_init (&sleep_list);
   list_init (&all_list);
+  list_init (&pid_list);
   for(i=0;i<63;i++)
     list_init (&mlfqs_ready_queue[i]);
 
@@ -181,6 +184,8 @@ thread_create (const char *name, int priority,
   tid_t tid;
   enum intr_level old_level;
 
+  struct pid_node *p;
+
   ASSERT (function != NULL);
 
   /* Allocate thread. */
@@ -193,9 +198,15 @@ thread_create (const char *name, int priority,
   t->nice = cur->nice;
   init_thread (t, name, priority);
   tid = t->tid = allocate_tid ();
-  list_init(&(t->file_opened)); 
-  list_init(&(t->child_pid));
-  t->is_kernel=true;
+
+    /* pid node allock*/
+  p = palloc_get_page (PAL_ZERO);
+  if(p==NULL)
+    return TID_ERROR;
+  p->pid=tid;
+  p->is_returned=false;
+
+  list_push_back(&pid_list,&(p->elem));
 
   /* Prepare thread for first run by initializing its stack.
      Do this atomically so intermediate values for the 'stack' 
@@ -224,6 +235,34 @@ thread_create (const char *name, int priority,
   thread_max_priority();
 
   return tid;
+}
+
+/*tid to thread*/
+struct thread* tid2thread(tid_t tid)
+{
+  struct thread *temp;
+  struct list_elem *e;
+
+  for (e=list_begin(&all_list);e!=list_end(&all_list);e=list_next(e))
+  {
+      temp = list_entry(e, struct thread, allelem);
+      if(temp->tid==tid)
+        return temp;
+  }
+  return NULL;
+}
+
+struct pid_node* pid2pid_node(tid_t pid)
+{
+  struct pid_node *temp;
+  struct list_elem *e;
+  for (e=list_begin(&pid_list);e!=list_end(&pid_list);e=list_next(e))
+  {
+      temp = list_entry(e, struct pid_node, elem);
+      if(temp->pid==pid)
+        return temp;
+  }
+  return NULL;
 }
 
 /* Puts the current thread to sleep.  It will not be scheduled
@@ -676,6 +715,9 @@ init_thread (struct thread *t, const char *name, int priority)
   t->original_priority = priority;
   t->waiting_lock = NULL;
   list_init(&t->holding_locks);
+  list_init(&(t->file_opened)); 
+  list_init(&(t->child_tid_list));
+  t->is_kernel=true;
   t->magic = THREAD_MAGIC;
   list_push_back (&all_list, &t->allelem);
 }

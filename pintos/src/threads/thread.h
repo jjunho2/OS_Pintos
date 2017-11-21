@@ -81,10 +81,10 @@ typedef int tid_t;
    ready state is on the run queue, whereas only a thread in the
    blocked state is on a semaphore wait list. */
 
-struct process_pid
+struct pid_node
   {
     int pid;
-    bool returned;
+    bool is_returned;
     int returned_val;
     struct list_elem elem;
   };
@@ -118,8 +118,9 @@ struct thread
     
     struct list file_opened;            /* list of fd that the thread opened*/
     
-    struct list child_pid;              /* list of child pid */
-    struct list_elem process_pid;
+    struct list child_tid_list;              /* list of child pid */
+    struct list_elem tid_list_node;
+    int parent_pid;
 
     /* Shared between thread.c and synch.c. */
     struct list_elem elem;              /* List element. */
@@ -189,5 +190,8 @@ void thread_update_recent_cpu (struct thread * t);
 void thread_update_priority (struct thread * t);
 void thread_update_recent_cpu_all (void);
 void thread_update_priority_all (void);
+
+struct thread* tid2thread(tid_t tid);
+struct pid_node* pid2pid_node(tid_t pid);
 
 #endif /* threads/thread.h */
