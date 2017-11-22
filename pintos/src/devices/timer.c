@@ -96,7 +96,7 @@ timer_sleep (int64_t ticks)
 
   cur->waiting_tick = start+ticks;
   
-  thread_sleep();
+  //thread_sleep();
 }
 
 /* Sleeps for approximately MS milliseconds.  Interrupts must be
@@ -178,19 +178,7 @@ timer_interrupt (struct intr_frame *args UNUSED)
   cur=thread_current();
   (cur->recent_cpu)++;
 
-  if(thread_mlfqs && timer_ticks()%TIMER_FREQ==0)
-  {
-    thread_update_load_avg();
-    thread_update_recent_cpu_all();
-  }
-  if(thread_mlfqs && timer_ticks()%4==0)
-  {
-    thread_update_priority_all();
-  }
-
   thread_tick ();
-  thread_wakeup(ticks);
-  thread_max_priority();
 }
 
 /* Returns true if LOOPS iterations waits for more than one timer
