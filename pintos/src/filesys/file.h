@@ -2,6 +2,8 @@
 #define FILESYS_FILE_H
 
 #include "filesys/off_t.h"
+#include "lib/kernel/list.h"
+#include "devices/block.h"
 
 struct inode;
 
@@ -25,5 +27,18 @@ void file_allow_write (struct file *);
 void file_seek (struct file *, off_t);
 off_t file_tell (struct file *);
 off_t file_length (struct file *);
+
+struct list bc;
+struct bc_entry
+{
+  struct file* f;
+  unsigned int bnum;
+  char block[BLOCK_SECTOR_SIZE];
+  struct list_elem elem;
+  int use_bit;
+};
+
+struct bc_entry* clock_head;
+void bc_flush();
 
 #endif /* filesys/file.h */

@@ -11,6 +11,62 @@ struct file
     bool deny_write;            /* Has file_deny_write() been called? */
   };
 
+
+/* buffer cache & functions */
+
+//struct list bc / struct be_entry is in file.h
+
+struct bc_entry* find_bc_entry(struct file* f, unsigned int bnum)
+{
+  struct list_elem * e;
+  struct bc_entry *entry;
+  for(e=list_begin(&bc);e!=list_end(&bc);e=list_next(e))
+  {
+    entry=list_entry(e,struct bc_entry,elem);
+    if(entry->f == f && entry->bnum == bnum)
+      break;
+  }
+  if(e!=list_end(&bc))
+    return entry;
+  return NULL;
+}
+
+
+struct bc_entry* bc_entry_evict()//have to fix
+{
+  struct bc_entry* entry=NULL;
+  //find the entry to evict with clock algorithm
+  return entry;
+}
+
+void evict()//evict a entry
+{
+  struct bc_entry *entry=bc_entry_evict();
+  write_back_bc_entry(entry);
+}
+
+void write_back_bc_entry(struct bc_entry* e)
+{
+  //write back the entry
+  palloc_free_page(e);
+}
+
+void bc_flush()
+{
+  struct list_elem * e;
+  struct bc_entry *entry;
+  for(e=list_begin(&bc);e!=list_end(&bc);e=list_next(e))
+  {
+    entry=list_entry(e,struct bc_entry,elem);
+    write_back_bc_entry(entry);
+  }
+}
+
+unsigned int pos2bnum(unsigned int pos)
+{
+  return (pos/BLOCK_SECTOR_SIZE);
+}
+
 /* Opens a file for the given INODE, of which it takes ownership,
    and returns the new file.  Returns a null pointer if an
    allocation fails or if INODE is null. */
@@ -68,7 +124,11 @@ file_get_inode (struct file *file)
 off_t
 file_read (struct file *file, void *buffer, off_t size) 
 {
-  off_t bytes_read = inode_read_at (file->inode, buffer, size, file->pos);
+  off_t bytes_read;
+  unsigned int bnum=pos2bnum(file->pos);
+  struct bc_entry * entry= 
+
+  bytes_read = inode_read_at (file->inode, buffer, size, file->pos);
   file->pos += bytes_read;
   return bytes_read;
 }

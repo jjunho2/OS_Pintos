@@ -23,6 +23,7 @@ filesys_init (bool format)
 
   inode_init ();
   free_map_init ();
+  list_init (&bc);
 
   if (format) 
     do_format ();
